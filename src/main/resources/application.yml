@@ -25,7 +25,3 @@ knife4j:
   setting:
     language: zh_cn
 
-logging:
-  level:
-    root: DEBUG
-
