@@ -1,6 +1,7 @@
 package com.lb.aiagent.app;
 
 import com.lb.aiagent.advisor.MyLoggerAdvisor;
+import com.lb.aiagent.chatmemory.FileBasedChatMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -28,11 +29,12 @@ public class LoveApp {
             """;
 
     public LoveApp(ChatModel dashscopeChatModel) {
-        InMemoryChatMemory chatMemory = new InMemoryChatMemory();
+        String fileDit = System.getProperty("user.dir") + "/chat-memory";
+        FileBasedChatMemory fileBasedChatMemory = new FileBasedChatMemory(fileDit);
         chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(chatMemory),
+                        new MessageChatMemoryAdvisor(fileBasedChatMemory),
                         // 自定义日志拦截器
                         new MyLoggerAdvisor()
                 )
