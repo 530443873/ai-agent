@@ -25,4 +25,9 @@ public class BusinessException extends RuntimeException {
         this.code = errorCode.getCode();
     }
 
+    public BusinessException(String message) {
+        super(message);
+        this.code = ErrorCode.PARAMS_ERROR.getCode();
+    }
+
 }

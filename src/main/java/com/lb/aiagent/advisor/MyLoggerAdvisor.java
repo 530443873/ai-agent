@@ -5,6 +5,9 @@ import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.model.MessageAggregator;
 import reactor.core.publisher.Flux;
 
+/**
+ * 自定义日志拦截器
+ */
 @Slf4j
 public class MyLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
     @Override
