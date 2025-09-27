@@ -9,11 +9,11 @@ public class BaseEntity {
     /**
      * 创建时间
      */
-    protected Date createTime;
+    protected Date createdTime;
 
     /**
      * 修改时间
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Date updateTime;
+    private Date updatedTime;
 }

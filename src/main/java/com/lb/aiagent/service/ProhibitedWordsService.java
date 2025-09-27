@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class ProhibitedWordsService extends ServiceImpl<ProhibitedWordsMapper, ProhibitedWords> {
 
     @Resource
-    private StringRedisTemplate redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     public static final String PROHIBITED_WORDS_KEY = "prohibitedWords";
 
@@ -44,11 +44,11 @@ public class ProhibitedWordsService extends ServiceImpl<ProhibitedWordsMapper, P
 
     public void delete(Long id) {
         removeById(id);
-        redisTemplate.delete(PROHIBITED_WORDS_KEY);
+        stringRedisTemplate.delete(PROHIBITED_WORDS_KEY);
     }
 
     public List<String> getAllWords() {
-        String wordsStr = redisTemplate.opsForValue().get(PROHIBITED_WORDS_KEY);
+        String wordsStr = stringRedisTemplate.opsForValue().get(PROHIBITED_WORDS_KEY);
         if (StrUtil.isNotBlank(wordsStr)) {
             return JSONUtil.toList(wordsStr, String.class);
         }
@@ -60,7 +60,7 @@ public class ProhibitedWordsService extends ServiceImpl<ProhibitedWordsMapper, P
         }
         List<String> words = prohibitedWords.stream().map(ProhibitedWords::getWord).toList();
         wordsStr = JacksonUtil.toJsonString(words);
-        redisTemplate.opsForValue().set(PROHIBITED_WORDS_KEY, wordsStr, 60 * 60 * 24 * 15, TimeUnit.SECONDS);
+        stringRedisTemplate.opsForValue().set(PROHIBITED_WORDS_KEY, wordsStr, 60 * 60 * 24 * 15, TimeUnit.SECONDS);
         return words;
     }
 }

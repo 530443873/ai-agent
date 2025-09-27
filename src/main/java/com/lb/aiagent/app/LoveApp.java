@@ -1,6 +1,7 @@
 package com.lb.aiagent.app;
 
 import com.lb.aiagent.advisor.MyLoggerAdvisor;
+import com.lb.aiagent.advisor.ProhibitedWordsAdvisor;
 import com.lb.aiagent.chatmemory.FileBasedChatMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,7 +37,8 @@ public class LoveApp {
                 .defaultAdvisors(
                         new MessageChatMemoryAdvisor(fileBasedChatMemory),
                         // 自定义日志拦截器
-                        new MyLoggerAdvisor()
+                        new MyLoggerAdvisor(),
+                        new ProhibitedWordsAdvisor()
                 )
                 .defaultAdvisors()
                 .build();

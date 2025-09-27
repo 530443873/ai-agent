@@ -1,9 +1,12 @@
 package com.lb.aiagent.advisor;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.lb.aiagent.exception.BusinessException;
 import com.lb.aiagent.service.ProhibitedWordsService;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.chat.client.advisor.api.*;
@@ -11,6 +14,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -24,15 +28,13 @@ import java.util.regex.Pattern;
 @Component
 public class ProhibitedWordsAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
-    @Resource
-    private ProhibitedWordsService prohibitedWordsService;
-
-    private final List<String> prohibitedWords;
+    private volatile List<String> prohibitedWords;
 
     // 构建正则表达式模式用于匹配违禁词
-    private final Pattern pattern;
+    private Pattern pattern;
 
-    public ProhibitedWordsAdvisor() {
+    public void initProhibitedWords() {
+        ProhibitedWordsService prohibitedWordsService = SpringUtil.getBean(ProhibitedWordsService.class);
         prohibitedWords = prohibitedWordsService.getAllWords();
         StringBuilder patternBuilder = new StringBuilder();
         if (CollUtil.isEmpty(prohibitedWords)) {
@@ -153,6 +155,7 @@ public class ProhibitedWordsAdvisor implements CallAroundAdvisor, StreamAroundAd
 
     @Override
     public AdvisedResponse aroundCall(@NotNull AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+        this.initProhibitedWords();
         // 请求前检查
         before(advisedRequest);
 
