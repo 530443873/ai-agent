@@ -67,7 +67,7 @@ public class JacksonUtil {
             JavaType javaType = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
             return objectMapper.readValue(json, javaType);
         } catch (IOException e) {
-            throw new RuntimeException("JSON字符串转集合失败", e);
+            throw new RuntimeException("JSON字符串转集合失败 " + e.getMessage(), e);
         }
     }
     

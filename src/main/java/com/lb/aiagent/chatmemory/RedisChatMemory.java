@@ -1,36 +1,27 @@
 package com.lb.aiagent.chatmemory;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
+import com.lb.aiagent.model.dto.RedisMessageDTO;
 import com.lb.aiagent.utils.JacksonUtil;
-import jakarta.annotation.Resource;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import com.lb.aiagent.utils.MapUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.model.Media;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Component
-@AllArgsConstructor
-@NoArgsConstructor
 public class RedisChatMemory implements ChatMemory {
 
-    @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    private String BASE_DIR;
+    private final StringRedisTemplate stringRedisTemplate = SpringUtil.getBean(StringRedisTemplate.class);
 
     public static final String CHAT_MEMORY_KEY = "CHAT:MEMORY:KEY:CONVERSATIONID:";
-
-    public RedisChatMemory(String dir) {
-        this.BASE_DIR = dir;
-    }
 
     @Override
     public void add(String conversationId, List<Message> messages) {
@@ -55,11 +46,62 @@ public class RedisChatMemory implements ChatMemory {
         if (StrUtil.isBlank(messageStr)) {
             return new ArrayList<>();
         }
-        return JacksonUtil.toList(messageStr, Message.class);
+        List<RedisMessageDTO> dtoList = JacksonUtil.toList(messageStr, RedisMessageDTO.class);
+        List<Message> messages = new ArrayList<>(dtoList.size());
+        for (RedisMessageDTO dto : dtoList) {
+            Message message = this.coverMessage(dto.getMessageType(), JacksonUtil.toJsonString(dto.getMessage()));
+            messages.add(message);
+        }
+        return messages;
     }
 
     private void saveConversation(String conversationId, List<Message> messages) {
-        stringRedisTemplate.opsForValue().set(CHAT_MEMORY_KEY + conversationId, JacksonUtil.toJsonString(messages),
+        List<RedisMessageDTO> dtoList = this.messageCoverDTO(messages);
+        stringRedisTemplate.opsForValue().set(CHAT_MEMORY_KEY + conversationId,
+                JacksonUtil.toJsonString(dtoList),
                 60 * 60, TimeUnit.SECONDS);
+    }
+
+    private List<RedisMessageDTO> messageCoverDTO(List<Message> messages) {
+        List<RedisMessageDTO> list = new ArrayList<>(messages.size());
+        for (Message message : messages) {
+            RedisMessageDTO dto = new RedisMessageDTO();
+            dto.setMessage(message);
+            dto.setMessageType(message.getMessageType().name());
+            list.add(dto);
+        }
+        return list;
+    }
+
+    public <T extends Message> Class<T> getMessageClass(String messageType) {
+        if (MessageType.USER.name().equals(messageType)) {
+            return (Class<T>) UserMessage.class;
+        } else if (MessageType.SYSTEM.name().equals(messageType)) {
+            return (Class<T>)SystemMessage.class;
+        } else if (MessageType.ASSISTANT.name().equals(messageType)) {
+            return (Class<T>)AssistantMessage.class;
+        } else if (MessageType.TOOL.name().equals(messageType)) {
+            return (Class<T>)ToolResponseMessage.class;
+        } else {
+            throw new IllegalArgumentException("Invalid message type: " + messageType);
+        }
+    }
+
+    public Message coverMessage(String messageType, String messageStr) {
+        Map map = JacksonUtil.toObject(messageStr, Map.class);
+        String content = MapUtil.get(map, "content", String.class);
+        List<Media> medias = MapUtil.getList(map, "media", Media.class);
+        Map<String, Object> metadata = MapUtil.get(map, "metadata", Map.class);
+        if (MessageType.USER.name().equals(messageType)) {
+            return new UserMessage(MessageType.USER, content, medias, metadata);
+        } else if (MessageType.SYSTEM.name().equals(messageType)) {
+            return new SystemMessage(content);
+        } else if (MessageType.ASSISTANT.name().equals(messageType)) {
+            return new AssistantMessage(content, metadata);
+        } else if (MessageType.TOOL.name().equals(messageType)) {
+            return new ToolResponseMessage(List.of(), metadata);
+        } else {
+            throw new IllegalArgumentException("Invalid message type: " + messageType);
+        }
     }
 }

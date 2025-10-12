@@ -2,11 +2,10 @@ package com.lb.aiagent.app;
 
 import com.lb.aiagent.advisor.MyLoggerAdvisor;
 import com.lb.aiagent.advisor.ProhibitedWordsAdvisor;
-import com.lb.aiagent.chatmemory.FileBasedChatMemory;
+import com.lb.aiagent.chatmemory.RedisChatMemory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
@@ -30,12 +29,14 @@ public class LoveApp {
             """;
 
     public LoveApp(ChatModel dashscopeChatModel) {
-        String fileDit = System.getProperty("user.dir") + "/chat-memory";
-        FileBasedChatMemory fileBasedChatMemory = new FileBasedChatMemory(fileDit);
+//        String fileDit = System.getProperty("user.dir") + "/chat-memory";
+//        FileBasedChatMemory fileBasedChatMemory = new FileBasedChatMemory(fileDit);
+
+        RedisChatMemory redisChatMemory = new RedisChatMemory();
         chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(fileBasedChatMemory),
+                        new MessageChatMemoryAdvisor(redisChatMemory),
                         // 自定义日志拦截器
                         new MyLoggerAdvisor(),
                         new ProhibitedWordsAdvisor()
